@@ -185,7 +185,3 @@ Error responses include detail message:
 
 - [talent-id-frontend](https://github.com/N4ch0VS/talent-id-frontend) - Next.js React frontend
 - [talent-id-bnb-chain](https://github.com/N4ch0VS/talent-id-bnb-chain) - Solidity smart contracts
-
-## License
-
-MIT
