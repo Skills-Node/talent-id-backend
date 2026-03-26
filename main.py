@@ -1,104 +1,110 @@
-import os
-from fastapi import FastAPI, HTTPException
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from google import genai
-from google.genai import types
-from dotenv import load_dotenv
 
-from models import PerfilRequest, PerfilResponse, MatchingRequest, MatchingResponse
+from config import get_settings
+from core import setup_logging, get_logger, init_db, close_db, AppException
+from api import auth_router, profiles_router, matching_router, health_router
+from middleware import limiter
 
-# Cargar variables de entorno desde .env
-load_dotenv()
+settings = get_settings()
+logger = get_logger()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    setup_logging()
+    logger.info("Starting TalentID API...")
+
+    try:
+        genai.Client()
+        logger.info("Gemini client initialized")
+    except Exception as e:
+        logger.warning(f"Gemini client not initialized: {e}")
+
+    await init_db()
+    logger.info("Database initialized")
+
+    yield
+
+    logger.info("Shutting down TalentID API...")
+    await close_db()
+
 
 app = FastAPI(
-    title="TalentID API",
+    title=settings.app_name,
     description="API para generar perfiles psicométricos y matching con IA",
-    version="1.0.0"
+    version=settings.app_version,
+    lifespan=lifespan,
 )
 
-# Configurar CORS para permitir peticiones desde el frontend (Next.js)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Configuración inicial del cliente de Gemini
-# El SDK toma automáticamente la variable de entorno GEMINI_API_KEY
-try:
-    client = genai.Client()
-except Exception as e:
-    print(f"Advertencia: No se pudo inicializar el cliente de Gemini. Verifica tu GEMINI_API_KEY. Error: {e}")
-    client = None
 
-@app.post("/api/perfil", response_model=PerfilResponse)
-async def generar_perfil(request: PerfilRequest):
-    if not client:
-        raise HTTPException(status_code=500, detail="El cliente de Gemini no está configurado.")
-        
-    prompt = f"""
-    Actúa como un psicólogo experto en evaluación de talento.
-    Analiza al siguiente candidato para generar un Perfil de Talento psicométrico.
-    
-    Nombre: {request.nombre}
-    Fecha de nacimiento: {request.fecha_nacimiento}
-    Respuestas del cuestionario (Eneagrama/Psicométrico): {request.respuestas_eneagrama}
+@app.exception_handler(AppException)
+async def app_exception_handler(request: Request, exc: AppException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+        headers=exc.headers,
+    )
 
-    Genera un perfil estructurado con:
-    1. tipo_personalidad: El tipo de personalidad (ej. Eneatipo 3, INTJ, etc.)
-    2. competencias: Exactamente 5 competencias clave con un valor de 0 a 100.
-    3. estilo_liderazgo: Breve descripción de su estilo de liderazgo.
-    4. compatibilidad: Qué tipo de cultura o líder hace mejor match con este perfil.
-    """
-    
-    try:
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json",
-                response_schema=PerfilResponse,
-                temperature=0.2, # Baja temperatura para respuestas más consistentes
-            ),
-        )
-        return response.parsed
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al generar perfil: {str(e)}")
 
-@app.post("/api/matching", response_model=MatchingResponse)
-async def generar_matching(request: MatchingRequest):
-    if not client:
-        raise HTTPException(status_code=500, detail="El cliente de Gemini no está configurado.")
-        
-    prompt = f"""
-    Actúa como un experto en recursos humanos y dinámica de equipos.
-    Analiza los siguientes perfiles para determinar su compatibilidad laboral.
-    
-    Datos del Líder: {request.datos_lider}
-    Datos del Candidato: {request.datos_candidato}
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.exception(f"Unhandled exception: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+    )
 
-    Genera un Informe de Compatibilidad estructurado con:
-    1. porcentaje_match: Un valor de 0 a 100 indicando la compatibilidad general.
-    2. puntos_fuertes: Una lista de 3 a 5 puntos fuertes de esta combinación de trabajo.
-    3. zonas_conflicto: Una lista de 2 a 3 posibles zonas de fricción o conflicto probable.
-    """
-    
-    try:
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json",
-                response_schema=MatchingResponse,
-                temperature=0.3,
-            ),
-        )
-        return response.parsed
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al generar matching: {str(e)}")
+
+app.include_router(health_router, prefix=settings.api_v1_prefix)
+app.include_router(auth_router, prefix=settings.api_v1_prefix)
+app.include_router(profiles_router, prefix=settings.api_v1_prefix)
+app.include_router(matching_router, prefix=settings.api_v1_prefix)
+
+
+@app.get("/")
+async def root():
+    return {
+        "name": settings.app_name,
+        "version": settings.app_version,
+        "docs": "/docs",
+    }
+
+
+@app.get("/api/perfil", include_in_schema=False)
+@app.post("/api/perfil", include_in_schema=False)
+async def legacy_perfil_endpoint(request: Request):
+    return {"message": "Use /api/v1/profiles instead", "status": "deprecated"}
+
+
+@app.get("/api/matching", include_in_schema=False)
+@app.post("/api/matching", include_in_schema=False)
+async def legacy_matching_endpoint(request: Request):
+    return {"message": "Use /api/v1/matchings instead", "status": "deprecated"}
+
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+
+    uvicorn.run(
+        "main:app",
+        host=settings.host,
+        port=settings.port,
+        reload=settings.debug,
+    )
