@@ -16,12 +16,12 @@ class Matching(Base):
         index=True,
     )
 
-    lider_tipo_personalidad = Column(String(100), nullable=True)
-    lider_datos = Column(Text, nullable=True)
+    leader_personality_type = Column(String(100), nullable=True)
+    leader_data = Column(Text, nullable=True)
 
-    porcentaje_match = Column(Integer, nullable=True)
-    puntos_fuertes = Column(JSON, nullable=True)
-    zonas_conflicto = Column(JSON, nullable=True)
+    match_percentage = Column(Integer, nullable=True)
+    strengths = Column(JSON, nullable=True)
+    conflict_zones = Column(JSON, nullable=True)
 
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 

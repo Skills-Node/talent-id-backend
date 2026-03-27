@@ -26,19 +26,11 @@ class MatchingRepository:
     async def create(
         self,
         profile_id: str,
-        lider_tipo_personalidad: str = None,
-        lider_datos: str = None,
-        porcentaje_match: int = None,
-        puntos_fuertes: list = None,
-        zonas_conflicto: list = None,
+        leader_data: str = None,
     ) -> Matching:
         matching = Matching(
             profile_id=profile_id,
-            lider_tipo_personalidad=lider_tipo_personalidad,
-            lider_datos=lider_datos,
-            porcentaje_match=porcentaje_match,
-            puntos_fuertes=puntos_fuertes,
-            zonas_conflicto=zonas_conflicto,
+            leader_data=leader_data,
         )
         self.db.add(matching)
         await self.db.commit()

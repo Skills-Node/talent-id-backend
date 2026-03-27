@@ -16,14 +16,20 @@ class Profile(Base):
         index=True,
     )
 
-    nombre = Column(String(255), nullable=False)
-    fecha_nacimiento = Column(String(50), nullable=False)
-    respuestas_eneagrama = Column(Text, nullable=False)
+    name = Column(String(255), nullable=False)
+    date_of_birth = Column(String(50), nullable=False)
+    enneagram_answers = Column(Text, nullable=False)
 
-    tipo_personalidad = Column(String(100), nullable=True)
-    competencias = Column(JSON, nullable=True)
-    estilo_liderazgo = Column(Text, nullable=True)
-    compatibilidad = Column(Text, nullable=True)
+    personality_type = Column(String(100), nullable=True)
+    profile_synthesis = Column(Text, nullable=True)
+    leadership_type = Column(JSON, nullable=True)
+    communication_style = Column(Text, nullable=True)
+    team_role = Column(Text, nullable=True)
+    key_competencies = Column(JSON, nullable=True)
+    growth_areas = Column(JSON, nullable=True)
+    competencies = Column(JSON, nullable=True)
+    leadership_style = Column(Text, nullable=True)
+    compatibility = Column(Text, nullable=True)
 
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(

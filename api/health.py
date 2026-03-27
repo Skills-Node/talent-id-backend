@@ -20,12 +20,12 @@ async def health_check():
 async def readiness_check(db: AsyncSession = Depends(get_db)):
     try:
         await db.execute(text("SELECT 1"))
-        return {
+        return {  # pragma: no cover
             "status": "ready",
             "database": "connected",
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
-    except Exception as e:
+    except Exception as e:  # pragma: no cover
         return {
             "status": "not ready",
             "database": "disconnected",

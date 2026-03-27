@@ -54,6 +54,17 @@ async def test_login_success(client):
 
 
 @pytest.mark.asyncio
+async def test_login_returns_token_type(auth_client):
+    response = await auth_client.post(
+        "/api/v1/auth/login",
+        json={"email": "test@example.com", "password": "testpassword123"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["token_type"] == "bearer"
+
+
+@pytest.mark.asyncio
 async def test_login_wrong_password(client):
     await client.post(
         "/api/v1/auth/register",
@@ -100,3 +111,14 @@ async def test_logout(auth_client):
     response = await auth_client.post("/api/v1/auth/logout")
     assert response.status_code == 200
     assert response.json()["message"] == "Successfully logged out"
+
+
+@pytest.mark.asyncio
+async def test_update_current_user(auth_client):
+    response = await auth_client.patch(
+        "/api/v1/auth/me",
+        json={"full_name": "Updated Name"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["full_name"] == "Updated Name"

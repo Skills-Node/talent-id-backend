@@ -4,7 +4,7 @@ from core import get_db, get_current_user_id
 from services import MatchingService
 from schemas import (
     MatchingRequestInput,
-    MatchingResponseOutput,
+    MatchingAIOutput,
     MatchingResponse,
     MatchingListResponse,
     MatchingCreateResponse,

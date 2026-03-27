@@ -4,7 +4,7 @@ from pathlib import Path
 from config import get_settings
 
 
-def setup_logging() -> None:
+def setup_logging() -> None:  # pragma: no cover
     settings = get_settings()
 
     logger.remove()

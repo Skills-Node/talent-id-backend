@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from google import genai
+import ollama
 
 from config import get_settings
 from core import setup_logging, get_logger, init_db, close_db, AppException
@@ -21,10 +21,13 @@ async def lifespan(app: FastAPI):
     logger.info("Starting TalentID API...")
 
     try:
-        genai.Client()
-        logger.info("Gemini client initialized")
+        client = ollama.Client(host="http://localhost:11434")
+        client.show("mistral")
+        app.state.ollama_client = client
+        logger.info("Ollama client initialized with Mistral")
     except Exception as e:
-        logger.warning(f"Gemini client not initialized: {e}")
+        logger.warning(f"Ollama client not initialized: {e}")
+        app.state.ollama_client = None
 
     await init_db()
     logger.info("Database initialized")

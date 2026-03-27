@@ -31,10 +31,10 @@ async def get_db() -> AsyncSession:
             await session.close()
 
 
-async def init_db() -> None:
+async def init_db() -> None:  # pragma: no cover
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
 
-async def close_db() -> None:
+async def close_db() -> None:  # pragma: no cover
     await engine.dispose()

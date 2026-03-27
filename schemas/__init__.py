@@ -9,16 +9,18 @@ from schemas.user import (
     TokenPayload,
 )
 from schemas.profile import (
-    Competencia,
-    PerfilRequestInput,
-    PerfilResponseOutput,
+    Competency,
+    ProfileRequestInput,
+    ProfileAIOutput,
     ProfileResponse,
     ProfileListResponse,
     ProfileCreateResponse,
+    TalentProfile,
+    LeadershipType,
 )
 from schemas.matching import (
     MatchingRequestInput,
-    MatchingResponseOutput,
+    MatchingAIOutput,
     MatchingResponse,
     MatchingListResponse,
     MatchingCreateResponse,
@@ -33,15 +35,25 @@ __all__ = [
     "TokenResponse",
     "RefreshTokenRequest",
     "TokenPayload",
-    "Competencia",
-    "PerfilRequestInput",
-    "PerfilResponseOutput",
+    # Profile schemas (English)
+    "Competency",
+    "ProfileRequestInput",
+    "ProfileAIOutput",
     "ProfileResponse",
     "ProfileListResponse",
     "ProfileCreateResponse",
+    "TalentProfileOutput",
+    "LeadershipType",
+    # Matching schemas (English)
     "MatchingRequestInput",
-    "MatchingResponseOutput",
+    "MatchingAIOutput",
     "MatchingResponse",
     "MatchingListResponse",
     "MatchingCreateResponse",
 ]
+
+# Spanish aliases for backward compatibility
+Competencia = Competency
+PerfilRequestInput = ProfileRequestInput
+PerfilResponseOutput = ProfileAIOutput
+MatchingResponseOutput = MatchingAIOutput

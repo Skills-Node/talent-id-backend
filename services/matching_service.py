@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from repositories import MatchingRepository, ProfileRepository
 from schemas import (
     MatchingRequestInput,
-    MatchingResponseOutput,
+    MatchingAIOutput,
     MatchingResponse,
     MatchingListResponse,
     MatchingCreateResponse,
@@ -34,22 +34,22 @@ class MatchingService:
 
         matching = await self.matching_repo.create(
             profile_id=request.profile_id,
-            lider_datos=request.datos_lider,
+            leader_data=request.leader_data,
         )
 
         ai_response = None
-        if self.gemini_client and profile.tipo_personalidad:
+        if self.gemini_client and profile.personality_type:
             ai_response = await self._generate_matching_with_ai(
                 profile=profile,
-                lider_datos=request.datos_lider,
+                leader_data=request.leader_data,
             )
             if ai_response:
-                matching.lider_tipo_personalidad = (
-                    f"Candidate: {profile.tipo_personalidad}"
+                matching.leader_personality_type = (
+                    f"Candidate: {profile.personality_type}"
                 )
-                matching.porcentaje_match = ai_response.porcentaje_match
-                matching.puntos_fuertes = ai_response.puntos_fuertes
-                matching.zonas_conflicto = ai_response.zonas_conflicto
+                matching.match_percentage = ai_response.match_percentage
+                matching.strengths = ai_response.strengths
+                matching.conflict_zones = ai_response.conflict_zones
                 await self.db.commit()
                 await self.db.refresh(matching)
 
@@ -59,30 +59,29 @@ class MatchingService:
         )
 
     async def _generate_matching_with_ai(
-        self, profile, lider_datos: str
-    ) -> Optional[MatchingResponseOutput]:
+        self, profile, leader_data: str
+    ) -> Optional[MatchingAIOutput]:
         prompt = f"""
-        Actúa como un experto en recursos humanos y dinámica de equipos.
-        Analiza los siguientes perfiles para determinar su compatibilidad laboral.
-        
-        Datos del Líder: {lider_datos}
-        Datos del Candidato: 
-        - Tipo de Personalidad: {profile.tipo_personalidad}
-        - Estilo de Liderazgo: {profile.estilo_liderazgo}
-        - Compatibilidad: {profile.compatibilidad}
+You are an expert in HR and team dynamics. Analyze the following profiles to determine their workplace compatibility.
 
-        Genera un Informe de Compatibilidad estructurado con:
-        1. porcentaje_match: Un valor de 0 a 100 indicando la compatibilidad general.
-        2. puntos_fuertes: Una lista de 3 a 5 puntos fuertes de esta combinación de trabajo.
-        3. zonas_conflicto: Una lista de 2 a 3 posibles zonas de fricción o conflicto probable.
-        
-        Responde SOLO con JSON válido en este formato exacto:
-        {{
-            "porcentaje_match": 0-100,
-            "puntos_fuertes": ["string", ...],
-            "zonas_conflicto": ["string", ...]
-        }}
-        """
+Leader/Candidate Profile Data:
+- Leader Preferences: {leader_data}
+- Candidate Personality Type: {profile.personality_type}
+- Candidate Leadership Style: {profile.leadership_style}
+- Candidate Compatibility: {profile.compatibility}
+
+Generate a Compatibility Report with:
+1. match_percentage: A value from 0 to 100 indicating overall compatibility.
+2. strengths: A list of 3-5 key strengths of this working combination.
+3. conflict_zones: A list of 2-3 potential friction areas or likely conflicts.
+
+Respond ONLY with valid JSON in this exact format:
+{{
+  "match_percentage": 0-100,
+  "strengths": ["string", ...],
+  "conflict_zones": ["string", ...]
+}}
+"""
 
         try:
             response = self.gemini_client.models.generate_content(
@@ -95,10 +94,12 @@ class MatchingService:
             text = response.text.strip()
             if text.startswith("```json"):
                 text = text[7:]
+            if text.startswith("```"):
+                text = text[3:]
             if text.endswith("```"):
                 text = text[:-3]
             data = json.loads(text.strip())
-            return MatchingResponseOutput(**data)
+            return MatchingAIOutput(**data)
         except Exception as e:
             logger.error(f"Error generating matching with AI: {e}")
             return None

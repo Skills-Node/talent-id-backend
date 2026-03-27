@@ -3,8 +3,8 @@ from pydantic import ValidationError
 from schemas import (
     UserCreate,
     UserLogin,
-    PerfilRequestInput,
-    Competencia,
+    ProfileRequestInput,
+    Competency,
     MatchingRequestInput,
 )
 
@@ -36,51 +36,68 @@ def test_user_create_short_password():
         )
 
 
-def test_perfil_request_input_valid():
-    request = PerfilRequestInput(
-        nombre="Juan Pérez",
-        fecha_nacimiento="1990-01-15",
-        respuestas_eneagrama="123321123",
+def test_profile_request_input_valid():
+    request = ProfileRequestInput(
+        name="John Smith",
+        date_of_birth="1990-01-15",
+        enneagram_answers="1,2,3,4,5,1,2,3,4,5,1,2,3,4,5",
     )
-    assert request.nombre == "Juan Pérez"
+    assert request.name == "John Smith"
+    assert request.date_of_birth == "1990-01-15"
 
 
-def test_perfil_request_input_empty_nombre():
+def test_profile_request_input_empty_name():
     with pytest.raises(ValidationError):
-        PerfilRequestInput(
-            nombre="",
-            fecha_nacimiento="1990-01-15",
-            respuestas_eneagrama="123321123",
+        ProfileRequestInput(
+            name="",
+            date_of_birth="1990-01-15",
+            enneagram_answers="1,2,3,4,5",
         )
 
 
-def test_competencia_valid():
-    comp = Competencia(nombre="Liderazgo", valor=85)
-    assert comp.nombre == "Liderazgo"
-    assert comp.valor == 85
+def test_competency_valid():
+    comp = Competency(name="Leadership", value=85)
+    assert comp.name == "Leadership"
+    assert comp.value == 85
 
 
-def test_competencia_invalid_value():
+def test_competency_invalid_value():
     with pytest.raises(ValidationError):
-        Competencia(nombre="Liderazgo", valor=150)
+        Competency(name="Leadership", value=150)
 
 
-def test_competencia_negative_value():
+def test_competency_negative_value():
     with pytest.raises(ValidationError):
-        Competencia(nombre="Liderazgo", valor=-10)
+        Competency(name="Leadership", value=-10)
 
 
 def test_matching_request_input_valid():
     request = MatchingRequestInput(
         profile_id="profile-123",
-        datos_lider="Líder tipo A con experiencia",
+        leader_data="Looking for a strategic technical partner",
     )
     assert request.profile_id == "profile-123"
+    assert request.leader_data == "Looking for a strategic technical partner"
 
 
-def test_matching_request_input_empty_datos():
+def test_matching_request_input_empty_leader_data():
     with pytest.raises(ValidationError):
         MatchingRequestInput(
             profile_id="profile-123",
-            datos_lider="",
+            leader_data="",
+        )
+
+
+def test_profile_request_input_missing_fields():
+    with pytest.raises(ValidationError):
+        ProfileRequestInput(
+            name="Test",
+            # missing date_of_birth and enneagram_answers
+        )
+
+
+def test_matching_request_input_missing_profile_id():
+    with pytest.raises(ValidationError):
+        MatchingRequestInput(
+            leader_data="Some data",
         )

@@ -2,98 +2,132 @@ from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from repositories import ProfileRepository
 from schemas import (
-    PerfilRequestInput,
-    PerfilResponseOutput,
+    ProfileRequestInput,
+    ProfileAIOutput,
     ProfileResponse,
     ProfileListResponse,
     ProfileCreateResponse,
+    TalentProfile,
+    Competency,
 )
 from core import NotFoundException, get_logger
-from google import genai
-from google.genai import types
 import json
 
 logger = get_logger()
 
 
 class ProfileService:
-    def __init__(self, db: AsyncSession, gemini_client=None):
+    def __init__(self, db: AsyncSession, ollama_client=None):
         self.db = db
         self.profile_repo = ProfileRepository(db)
-        self.gemini_client = gemini_client
+        self.ollama_client = ollama_client
 
     async def create_profile(
-        self, user_id: str, request: PerfilRequestInput
+        self, user_id: str, request: ProfileRequestInput
     ) -> ProfileCreateResponse:
         profile = await self.profile_repo.create(
             user_id=user_id,
-            nombre=request.nombre,
-            fecha_nacimiento=request.fecha_nacimiento,
-            respuestas_eneagrama=request.respuestas_eneagrama,
+            name=request.name,
+            date_of_birth=request.date_of_birth,
+            enneagram_answers=request.enneagram_answers,
         )
 
         ai_response = None
-        if self.gemini_client:
+        if self.ollama_client:
             ai_response = await self._generate_profile_with_ai(request)
             if ai_response:
+                competency_list = [
+                    {"name": c.name, "value": c.value}
+                    for c in ai_response.key_competencies
+                ]
                 profile = await self.profile_repo.update(
                     profile_id=profile.id,
                     user_id=user_id,
-                    tipo_personalidad=ai_response.tipo_personalidad,
-                    competencias=[c.model_dump() for c in ai_response.competencias],
-                    estilo_liderazgo=ai_response.estilo_liderazgo,
-                    compatibilidad=ai_response.compatibilidad,
+                    personality_type=ai_response.leadership_type.archetype,
+                    competencies=competency_list,
+                    leadership_style=ai_response.communication_style,
+                    compatibility=ai_response.team_role,
+                    profile_synthesis=ai_response.profile_synthesis,
+                    leadership_type={
+                        "archetype": ai_response.leadership_type.archetype,
+                        "description": ai_response.leadership_type.description,
+                    },
+                    communication_style=ai_response.communication_style,
+                    team_role=ai_response.team_role,
+                    key_competencies=competency_list,
+                    growth_areas=ai_response.growth_areas,
                 )
 
         return ProfileCreateResponse(
             profile=ProfileResponse.model_validate(profile),
-            ai_response=ai_response,
+            ai_response=None,
         )
 
     async def _generate_profile_with_ai(
-        self, request: PerfilRequestInput
-    ) -> Optional[PerfilResponseOutput]:
+        self, request: ProfileRequestInput
+    ) -> Optional[TalentProfile]:
         prompt = f"""
-        Actúa como un psicólogo experto en evaluación de talento.
-        Analiza al siguiente candidato para generar un Perfil de Talento psicométrico.
-        
-        Nombre: {request.nombre}
-        Fecha de nacimiento: {request.fecha_nacimiento}
-        Respuestas del cuestionario (Eneagrama/Psicométrico): {request.respuestas_eneagrama}
+You are an expert in organizational psychology, ontological coaching, and high-performance team dynamics. Your goal is to analyze a professional's data and generate a deep, accurate "Comprehensive Talent Profile" without empty corporate jargon.
 
-        Genera un perfil estructurado con:
-        1. tipo_personalidad: El tipo de personalidad (ej. Eneatipo 3, INTJ, etc.)
-        2. competencias: Exactamente 5 competencias clave con un valor de 0 a 100.
-        3. estilo_liderazgo: Breve descripción de su estilo de liderazgo.
-        4. compatibilidad: Qué tipo de cultura o líder hace mejor match con este perfil.
-        
-        Responde SOLO con JSON válido en este formato exacto:
-        {{
-            "tipo_personalidad": "string",
-            "competencias": [
-                {{"nombre": "string", "valor": 0-100}},
-                ...
-            ],
-            "estilo_liderazgo": "string",
-            "compatibilidad": "string"
-        }}
-        """
+Candidate Input Data:
+- Name: {request.name}
+- Date of birth: {request.date_of_birth}
+- Enneagram questionnaire answers: {request.enneagram_answers}
+
+Profile Synthesis: Get to the core essence of the person. Do not simply describe their technical experience, but rather how they process information, what motivates them, and how they operate internally.
+
+Leadership Type: Define their leadership archetype. Explain how they influence others, where they lead from, and how they make decisions.
+
+Communication Style: Identify their most distinctive communication traits and explain how they impact the rest of the team.
+
+Team Role: Define the natural roles they assume when working with others.
+
+Key Competencies: Extract exactly 5 fundamental skills and assign them a mastery percentage from 0 to 100.
+
+Growth Areas / Conflict Zones: Identify blind spots or probable frictions. Formulate them as areas of attention.
+
+Mandatory Output Format (Strict JSON - English keys only):
+{{
+  "profile_synthesis": "Deep 2-3 paragraph text about the candidate's essence...",
+  "leadership_type": {{
+    "archetype": "Name of the archetype (e.g., Transformational leadership)",
+    "description": "Detailed explanation of the leadership style..."
+  }},
+  "communication_style": "Description of communication style...",
+  "team_role": "Natural role in teams (e.g., The Solutions Architect)",
+  "key_competencies": [
+    {{"name": "Skill Name", "value": 0-100}},
+    {{"name": "Skill Name", "value": 0-100}},
+    {{"name": "Skill Name", "value": 0-100}},
+    {{"name": "Skill Name", "value": 0-100}},
+    {{"name": "Skill Name", "value": 0-100}}
+  ],
+  "growth_areas": ["Area 1", "Area 2", "Area 3"]
+}}
+
+Respond ONLY with valid JSON, no additional text.
+"""
 
         try:
-            response = self.gemini_client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    temperature=0.2,
-                ),
+            response = self.ollama_client.chat(
+                model="mistral",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt,
+                    }
+                ],
+                options={"temperature": 0.2},
             )
-            text = response.text.strip()
+            text = response["message"]["content"].strip()
             if text.startswith("```json"):
                 text = text[7:]
+            if text.startswith("```"):
+                text = text[3:]
             if text.endswith("```"):
                 text = text[:-3]
             data = json.loads(text.strip())
-            return PerfilResponseOutput(**data)
+            return TalentProfile(**data)
         except Exception as e:
             logger.error(f"Error generating profile with AI: {e}")
             return None

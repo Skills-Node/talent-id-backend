@@ -73,7 +73,7 @@ class AuthService:
         self, refresh_request: RefreshTokenRequest
     ) -> TokenResponse:
         parts = refresh_request.refresh_token.split(".")
-        if len(parts) != 3:
+        if len(parts) < 2:
             raise UnauthorizedException("Invalid refresh token format")
 
         token_id = parts[0]
@@ -89,8 +89,7 @@ class AuthService:
         if not user or not user.is_active:
             raise UnauthorizedException("Invalid refresh token")
 
-        token_hash = get_password_hash(token_id)
-        stored_token = await self.token_repo.get_by_hash(token_hash)
+        stored_token = await self.token_repo.get_by_token_id(token_id)
         if not stored_token or stored_token.token_id != token_id:
             raise UnauthorizedException("Invalid refresh token")
 

@@ -35,10 +35,20 @@ async def db_session():
 
 @pytest_asyncio.fixture
 async def client(db_session):
+    from unittest.mock import AsyncMock
+
     async def override_get_db():
         yield db_session
 
     app.dependency_overrides[get_db] = override_get_db
+
+    mock_ollama = AsyncMock()
+    mock_ollama.chat.return_value = AsyncMock(
+        message=AsyncMock(
+            content='{"profile_synthesis": "Test synthesis", "leadership_type": {"archetype": "Transformational", "description": "Leading through vision"}, "communication_style": "Clear and direct", "team_role": "Facilitator", "key_competencies": [{"name": "Strategic Thinking", "value": 85}], "growth_areas": ["Public speaking"]}'
+        )
+    )
+    app.state.ollama_client = mock_ollama
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:

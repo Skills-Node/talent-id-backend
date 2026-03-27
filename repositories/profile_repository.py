@@ -35,15 +35,15 @@ class ProfileRepository:
     async def create(
         self,
         user_id: str,
-        nombre: str,
-        fecha_nacimiento: str,
-        respuestas_eneagrama: str,
+        name: str,
+        date_of_birth: str,
+        enneagram_answers: str,
     ) -> Profile:
         profile = Profile(
             user_id=user_id,
-            nombre=nombre,
-            fecha_nacimiento=fecha_nacimiento,
-            respuestas_eneagrama=respuestas_eneagrama,
+            name=name,
+            date_of_birth=date_of_birth,
+            enneagram_answers=enneagram_answers,
         )
         self.db.add(profile)
         await self.db.commit()
@@ -54,23 +54,41 @@ class ProfileRepository:
         self,
         profile_id: str,
         user_id: str,
-        tipo_personalidad: str = None,
-        competencias: dict = None,
-        estilo_liderazgo: str = None,
-        compatibilidad: str = None,
+        personality_type: str = None,
+        competencies: dict = None,
+        leadership_style: str = None,
+        compatibility: str = None,
+        profile_synthesis: str = None,
+        leadership_type: dict = None,
+        communication_style: str = None,
+        team_role: str = None,
+        key_competencies: dict = None,
+        growth_areas: dict = None,
     ) -> Profile:
         profile = await self.get_by_user_and_id(user_id, profile_id)
         if not profile:
             raise NotFoundException("Profile not found")
 
-        if tipo_personalidad is not None:
-            profile.tipo_personalidad = tipo_personalidad
-        if competencias is not None:
-            profile.competencias = competencias
-        if estilo_liderazgo is not None:
-            profile.estilo_liderazgo = estilo_liderazgo
-        if compatibilidad is not None:
-            profile.compatibilidad = compatibilidad
+        if personality_type is not None:
+            profile.personality_type = personality_type
+        if competencies is not None:
+            profile.competencies = competencies
+        if leadership_style is not None:
+            profile.leadership_style = leadership_style
+        if compatibility is not None:
+            profile.compatibility = compatibility
+        if profile_synthesis is not None:
+            profile.profile_synthesis = profile_synthesis
+        if leadership_type is not None:
+            profile.leadership_type = leadership_type
+        if communication_style is not None:
+            profile.communication_style = communication_style
+        if team_role is not None:
+            profile.team_role = team_role
+        if key_competencies is not None:
+            profile.key_competencies = key_competencies
+        if growth_areas is not None:
+            profile.growth_areas = growth_areas
 
         await self.db.commit()
         await self.db.refresh(profile)
