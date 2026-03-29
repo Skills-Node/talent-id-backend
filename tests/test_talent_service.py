@@ -717,3 +717,73 @@ class TestTalentServiceJobDetails:
         )
         assert candidate.token_id == 1
         assert candidate.profile_uri == ""
+
+
+class TestTalentServiceContractProperties:
+    @pytest.fixture
+    def talent_service_with_contract(self):
+        service = TalentService()
+        service._contract = None
+        service._nft_contract = None
+        return service
+
+    @pytest.fixture
+    def talent_service_with_address(self, talent_service_with_contract):
+        import os
+
+        original = os.environ.get("TALENT_SERVICES_CONTRACT_ADDRESS")
+        os.environ["TALENT_SERVICES_CONTRACT_ADDRESS"] = (
+            "0x1234567890123456789012345678901234567890"
+        )
+        yield talent_service_with_contract
+        if original:
+            os.environ["TALENT_SERVICES_CONTRACT_ADDRESS"] = original
+        else:
+            os.environ.pop("TALENT_SERVICES_CONTRACT_ADDRESS", None)
+
+    def test_contract_property_no_address(self, talent_service_with_contract):
+        assert talent_service_with_contract.contract is None
+
+    def test_contract_property_with_address_error(self, talent_service_with_address):
+        talent_service_with_address.w3.eth.contract = Mock(
+            side_effect=Exception("Contract error")
+        )
+        result = talent_service_with_address.contract
+        assert result is None
+
+    def test_nft_contract_property_no_address(self, talent_service_with_contract):
+        assert talent_service_with_contract.nft_contract is None
+
+    def test_nft_contract_property_with_address_error(
+        self, talent_service_with_address
+    ):
+        import os
+
+        os.environ["TALENT_NFT_CONTRACT_ADDRESS"] = (
+            "0x1234567890123456789012345678901234567890"
+        )
+        talent_service_with_address.w3.eth.contract = Mock(
+            side_effect=Exception("NFT Contract error")
+        )
+        result = talent_service_with_address.nft_contract
+        assert result is None
+        os.environ.pop("TALENT_NFT_CONTRACT_ADDRESS", None)
+
+
+class TestTalentServiceAdditional:
+    def test_get_contract_abi(self):
+        service = TalentService()
+        abi = service._get_contract_abi("TalentServices")
+        assert isinstance(abi, list)
+        assert len(abi) > 0
+
+    def test_get_nft_abi(self):
+        service = TalentService()
+        abi = service._get_nft_abi()
+        assert isinstance(abi, list)
+        assert len(abi) > 0
+
+    def test_get_all_abi_names(self):
+        service = TalentService()
+        abi = service._get_contract_abi("TalentEscrow")
+        assert isinstance(abi, list)
