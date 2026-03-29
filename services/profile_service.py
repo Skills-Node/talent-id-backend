@@ -67,14 +67,14 @@ class ProfileService:
         self, request: ProfileRequestInput
     ) -> Optional[TalentProfile]:
         prompt = f"""
-You are an expert in organizational psychology, ontological coaching, and high-performance team dynamics. Your goal is to analyze a professional's data and generate a deep, accurate "Comprehensive Talent Profile" without empty corporate jargon.
+You are an expert in organizational psychology, ontological coaching, and high-performance team dynamics. Your goal is to analyze a professional's data and generate a deep, accurate "Comprehensive Talent Profile" without empty corporate jargon. IMPORTANT: All content must be in ENGLISH only.
 
 Candidate Input Data:
 - Name: {request.name}
 - Date of birth: {request.date_of_birth}
 - Enneagram questionnaire answers: {request.enneagram_answers}
 
-Profile Synthesis: Get to the core essence of the person. Do not simply describe their technical experience, but rather how they process information, what motivates them, and how they operate internally.
+Profile Synthesis: Get to the core essence of the person. Do not simply describe their technical experience, but rather how they processes information, what motivates them, and how they operate internally.
 
 Leadership Type: Define their leadership archetype. Explain how they influence others, where they lead from, and how they make decisions.
 
@@ -86,11 +86,11 @@ Key Competencies: Extract exactly 5 fundamental skills and assign them a mastery
 
 Growth Areas / Conflict Zones: Identify blind spots or probable frictions. Formulate them as areas of attention.
 
-Mandatory Output Format (Strict JSON - English keys only):
+Mandatory Output Format (Strict JSON - English only):
 {{
-  "profile_synthesis": "Deep 2-3 paragraph text about the candidate's essence...",
+  "profile_synthesis": "Deep 2-3 paragraph text about the candidate's essence in English...",
   "leadership_type": {{
-    "archetype": "Name of the archetype (e.g., Transformational leadership)",
+    "archetype": "Name of the archetype (e.g., Transformational Leadership)",
     "description": "Detailed explanation of the leadership style..."
   }},
   "communication_style": "Description of communication style...",
@@ -105,7 +105,7 @@ Mandatory Output Format (Strict JSON - English keys only):
   "growth_areas": ["Area 1", "Area 2", "Area 3"]
 }}
 
-Respond ONLY with valid JSON, no additional text.
+Respond ONLY with valid JSON in English, no additional text.
 """
 
         try:

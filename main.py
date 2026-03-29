@@ -8,7 +8,13 @@ import ollama
 
 from config import get_settings
 from core import setup_logging, get_logger, init_db, close_db, AppException
-from api import auth_router, profiles_router, matching_router, health_router
+from api import (
+    auth_router,
+    profiles_router,
+    matching_router,
+    health_router,
+    talent_router,
+)
 from middleware import limiter
 
 settings = get_settings()
@@ -79,6 +85,7 @@ app.include_router(health_router, prefix=settings.api_v1_prefix)
 app.include_router(auth_router, prefix=settings.api_v1_prefix)
 app.include_router(profiles_router, prefix=settings.api_v1_prefix)
 app.include_router(matching_router, prefix=settings.api_v1_prefix)
+app.include_router(talent_router, prefix=settings.api_v1_prefix)
 
 
 @app.get("/")

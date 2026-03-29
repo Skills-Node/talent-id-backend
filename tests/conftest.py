@@ -7,6 +7,10 @@ import os
 os.environ["SECRET_KEY"] = "test-secret-key-for-testing-only"
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
 os.environ["GEMINI_API_KEY"] = "test-api-key"
+os.environ["BLOCKCHAIN_RPC_URL"] = "http://localhost:8545"
+os.environ["TALENT_SERVICES_CONTRACT_ADDRESS"] = ""
+os.environ["TALENT_NFT_CONTRACT_ADDRESS"] = ""
+os.environ["PRIVATE_KEY"] = "test-private-key"
 
 from main import app
 from core.database import Base, get_db

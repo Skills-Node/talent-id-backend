@@ -25,6 +25,20 @@ from schemas.matching import (
     MatchingListResponse,
     MatchingCreateResponse,
 )
+from schemas.talent_service import (
+    CompanyCreate,
+    CompanyResponse,
+    JobCreate,
+    JobResponse,
+    JobListResponse,
+    CandidateSearchRequest,
+    CandidateResponse,
+    CandidateListResponse,
+    OfferCreate,
+    OfferResponse,
+    OfferListResponse,
+    OfferActionResponse,
+)
 
 __all__ = [
     "UserBase",
@@ -50,6 +64,19 @@ __all__ = [
     "MatchingResponse",
     "MatchingListResponse",
     "MatchingCreateResponse",
+    # Talent Service schemas
+    "CompanyCreate",
+    "CompanyResponse",
+    "JobCreate",
+    "JobResponse",
+    "JobListResponse",
+    "CandidateSearchRequest",
+    "CandidateResponse",
+    "CandidateListResponse",
+    "OfferCreate",
+    "OfferResponse",
+    "OfferListResponse",
+    "OfferActionResponse",
 ]
 
 # Spanish aliases for backward compatibility

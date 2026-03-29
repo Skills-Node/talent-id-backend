@@ -32,6 +32,12 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     log_file: str = "logs/app.log"
 
+    # Blockchain
+    blockchain_rpc_url: str = "http://localhost:8545"
+    talent_services_contract_address: str = ""
+    talent_nft_contract_address: str = ""
+    private_key: str = ""
+
     @property
     def cors_origins_list(self) -> List[str]:
         return [origin.strip() for origin in self.cors_origins.split(",")]
