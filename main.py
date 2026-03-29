@@ -87,7 +87,7 @@ app.include_router(auth_router, prefix=settings.api_v1_prefix)
 app.include_router(profiles_router, prefix=settings.api_v1_prefix)
 app.include_router(matching_router, prefix=settings.api_v1_prefix)
 app.include_router(talent_router, prefix=settings.api_v1_prefix)
-app.include_router(interview_router, prefix=settings.api_v1_prefix)
+app.include_router(interview_router, prefix=f"{settings.api_v1_prefix}/interview")
 
 
 @app.get("/")
